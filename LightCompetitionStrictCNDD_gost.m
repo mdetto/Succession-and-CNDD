@@ -48,40 +48,16 @@ lambda = JM/(1-rmin);
 r(1) = 1+log(rand)/lambda;
 %     rp(1) = (r.^-c - 1).^(-1/c);
 t(1) = fminbnd(@fun1,0,r(1),opts);
-    
-%     z = linspace(0.95,1,1000);
-%     x=zeros(1000,1);
-%     for i=1:100
-%         x(i) = fun1(z(i));
-%     end
-%     
-%     plot(z,x)
-    
-    R(1) = 1 - t(1);
-%     n(1) = R(1)/(1+alfa*R(1));
+R(1) = 1 - t(1);
 
-    i=1;
-%     while ks(i)<max(kr) && k(i)<max(kr)
-%     while t(i)>min(tr) && r(i)>t(i)
+i=1;
     while t(i)>rmin
         i=i+1;
 
-%         r(i) = max(tr(tr<t(i-1) & tr<r(i-1)));
         r(i) = t(i-1)+log(rand)/lambda;
         if r(i)>rmin
         t(i)  = fminbnd(@fun2,0,r(i),opts);
-%         if r(i)<t(i)
-%             z = linspace(0,t(i-1),10000);
-%             x = zeros(size(z));
-%             for j=1:length(z)
-%                 x(j) = fun3(z(j));
-%             end
-% 
-%             plot(log(z),x)
-% 
-%         end
         R(i) = t(i-1) - t(i);
-%         n(i) = R(i)/(1+alfa*R(i));
         else
             t(i)=0;
         end

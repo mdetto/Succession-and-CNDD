@@ -3,7 +3,7 @@
 % metacommunity. Specifically, inter-arrival times are exponential
 % random variables with rate S. 
 
-function [M,ti,pR,ri,pZ,Lzi,SL,pN] = RenewalProcess(S,mp,rmin)
+function [M,ti,R_r,ri,pZ,Lzi,SL,pN] = RenewalProcess(S,mp,rmin,c)
 
 bin = 100;
 tmax = 1-rmin;
@@ -19,7 +19,8 @@ M(use) = (S*tmax + 1 - exp(-S*(ti(use)-tmax)))/2;
 
 %% species trait distribution
 ri = linspace(rmin,1,bin);
-pR = S*(exp(-S*(1-ri))+1)/(S*tmax + 1 - exp(-S*tmax));
+r=1-ri;
+R_r = 2/S*(1-exp(-S*r)+S*r.*exp(-S*r))./(1+exp(-S*r));
   
 
 %% SAD
@@ -30,42 +31,48 @@ zi = exp(Lzi);
 SL  = (S*tmax + 1 - exp(-S*tmax))/2;
 
 use=zi> 2*tmax*(1-tmax);
-xup = zi./(1-tmax);
-xup(use)=1+sqrt(1-2*zi(use));
-xlo=1-sqrt(1-2*zi);
+rup = zi./(1-tmax)/2;
+rup(use)=(1+sqrt(1-2*zi(use)))/2;
+rlo=(1-sqrt(1-2*zi))/2;
 
-pZ = S/2*zi.*exp(-S/2*(1-sqrt(1-2*zi)))./sqrt(1-2*zi)/SL + ...
-      S^2/(4*SL)*(expint(S*xlo/2)-expint(S*xup/2)).*zi;
+pZ = S/(2*SL)*(exp(-S/2*(1-sqrt(1-2*zi)))./sqrt(1-2*zi) + ...
+      S/2*(expint(S*rlo)-expint(S*rup))).*zi;
 
 pZ(end) = 0;
+
+for i=1:bin
+pZ(2,i) = integral(@(r) ...
+    zi(i).*S./(2*r).*exp(-S./(2*r).*zi(i)) ...
+    .*S.*(exp(-S*(1-r))+1)/(S*tmax + 1 - exp(-S*tmax)),rmin,1);
+end
 
 
 %% SAD 2
 
-tup = tmax - zi/(2*(1-tmax));
-zcr = 2*(1-tmax)^2;
-tup(zi>zcr) =  1 - sqrt(2*zi(zi>zcr));
-
-x1    = @(t,z) 1-t-(sqrt((1-t).^2-2*z));
-x2    = @(t,z) 1-t+(sqrt((1-t).^2-2*z));
-dxdz = @(t,z) 1./(sqrt((1-t).^2-2*z));
-
+% tup = tmax - zi/(2*(1-tmax));
+% zcr = 2*(1-tmax)^2;
+% tup(zi>zcr) =  1 - sqrt(2*zi(zi>zcr));
+% 
+% x1    = @(t,z) 1-t-(sqrt((1-t).^2-2*z));
+% x2    = @(t,z) 1-t+(sqrt((1-t).^2-2*z));
+% dxdz = @(t,z) 1./(sqrt((1-t).^2-2*z));
+% 
 f    = @(x) S/2.*exp(-S/2.*x);
-
-pi2 = zeros(1,length(zi));
-for i=1:length(zi)-1
-    
-       pi2(i) = integral(@(t) ...
-         zi(i).*f(x1(t,zi(i))).*dxdz(t,zi(i)).*S/2,0,tup(i));
-
-end
-
-
-p1 = zi.*f(1-sqrt(1-2*zi))./(sqrt(1-2*zi));
-p1(end)=0;
-
-
-pZ(2,:) = (p1+pi2)/SL;
+% 
+% pi2 = zeros(1,length(zi));
+% for i=1:length(zi)-1
+%     
+%        pi2(i) = integral(@(t) ...
+%          zi(i).*f(x1(t,zi(i))).*dxdz(t,zi(i)).*S/2,0,tup(i));
+% 
+% end
+% 
+% 
+% p1 = zi.*f(1-sqrt(1-2*zi))./(sqrt(1-2*zi));
+% p1(end)=0;
+% 
+% 
+% pZ(2,:) = (p1+pi2)/SL;
 
 %% P(N)
 
@@ -84,7 +91,7 @@ end
 %%%%%%%   CASE WITH CNDD  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else  
 
-c1 = 2.5;
+c1 = c+1;
 tmax = 1-rmin;
 a = 1/2 + mp/c1;
 b = mp/c1;
@@ -103,9 +110,17 @@ M = S*(ap-b/2*ti).*ti;
 
 %% species trait distribution
 ri = linspace(rmin,1,bin);
+r=1-ri;
+ap = a-1/2*b/S;
+g1 = 1./((1-ap+1/2*b/S^2)*exp(-S*r)+ap-b*r);
+W = zeros*size(ri);
+for i=1:bin
+W(i) = integral(@(x)...
+    S*exp(-S*x).*x.*(ap-b*r(i)+b*x)./(a-b*r(i)+mp*x),...
+    0,r(i));
+end
 
-% pR = c0/SL*(S/c0 - a - b/S*(1-1/2/S))*exp(-S*(1-ri)) + c0/SL*(a-b*(1-ri));
-pR = S/SL*(1 - ap - b/S*(1-1/2/S))*exp(-S*(1-ri)) + S/SL*(ap-b*(1-ri));
+R_r = g1.*(exp(-S*r).*r./(a-b*r+mp*r) + W);
 
 %% SAD
 

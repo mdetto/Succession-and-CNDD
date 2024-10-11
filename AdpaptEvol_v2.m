@@ -2,7 +2,7 @@ function [r,rm,T] = AdpaptEvol_v2(r0,alfa,T,Tmax,type)
 
 opts = optimset('TolX',1e-18,'TolFun',1e-18);
 
-p = 0.5;
+p = 0.1;
 rmin = 0.2;
 c = 1.5;
 c1 = c+1;
@@ -18,12 +18,12 @@ while T<Tmax
     %         dr = sigma*randn*sqrt(dt);
     dr = sigma*randn;
     rnew = rm(j) + dr;
-    if rnew>rmin
+    if rnew>rmin && rnew<1
     rm = [rm; rnew];
     r   = zeros(length(rm),1);
     t   = 1;
     i=0;
-    while min(rm)<t
+    while min(rm)<t && rnew<1
         i=i+1;
         r(i) = max(rm(rm<t));
         t = fminbnd(@fun2,0,r(i),opts);
@@ -48,7 +48,7 @@ elseif strcmp(type,'Smax')
     %         dr = sigma*randn*sqrt(dt);
     dr = sigma*randn;
     rnew = rm(j) + dr;
-    if rnew>rmin
+    if rnew>rmin && rnew<1
     rm = [rm; rnew];
     r   = zeros(length(rm),1);
     t   = 1;
@@ -69,6 +69,17 @@ elseif strcmp(type,'Smax')
     N=length(r);
     end
 end
+
+% if nargout==4
+%     t  = 1;
+%     i=0;
+%     n=zeros(size(r));
+%     for i=1:length(r)
+%         i=i+1;ti=t;
+%         t = fminbnd(@fun2,0,r(i),opts);
+%         n(i) = (ti^-c - t^-c)*r(i)^c1/c;
+%     end
+% end
 %% function for t
     function y = fun2(ti)
 
